@@ -90,17 +90,48 @@ cmake --build . --config Release
 
 ## Installation
 
-After building, the plugin will be automatically installed to:
+After building, both plugin and standalone versions will be created:
+
+### Plugin Installation
+The VST3 plugin will be automatically installed to:
 - **Linux**: `~/.vst3/SynthPlugin.vst3`
 - **macOS**: `~/Library/Audio/Plug-Ins/VST3/SynthPlugin.vst3`
 - **Windows**: `%COMMONPROGRAMFILES%\VST3\SynthPlugin.vst3`
 
+### Standalone Application
+The standalone version will be built to:
+- **Linux**: `build/SynthPlugin_artefacts/Standalone/SynthPlugin`
+- **macOS**: `build/SynthPlugin_artefacts/Standalone/SynthPlugin.app`
+- **Windows**: `build/SynthPlugin_artefacts/Standalone/SynthPlugin.exe`
+
 ## Usage
 
+### Standalone Application
+1. **Direct Launch**: Run the standalone executable from the build directory
+2. **Audio Settings**: Configure audio device in the application preferences
+3. **MIDI Input**: Connect MIDI keyboard through system MIDI settings
+4. **Immediate Testing**: Perfect for development and quick testing without a DAW
+
+### Plugin in DAW
 1. **Load in DAW**: Open your DAW and scan for new plugins
 2. **Create Track**: Add SynthPlugin as a virtual instrument
 3. **MIDI Input**: Connect MIDI keyboard or draw MIDI notes
 4. **Parameter Control**: Adjust synthesizer, arpeggiator, and effects in real-time
+
+## Testing Your Plugin
+
+### Quick Testing (Standalone)
+```bash
+# Launch standalone version
+cd SynthPlugin/build/SynthPlugin_artefacts/Standalone
+./SynthPlugin
+```
+
+### Plugin Testing (Reaper/DAWs)
+1. **Scan Plugins**: In Reaper, go to Options > Preferences > Plug-ins > VST
+2. **Add Path**: Ensure `~/.vst3/` is in the VST3 scan path
+3. **Rescan**: Force a plugin rescan
+4. **Load Plugin**: Create a new track and load "SynthPlugin" as an instrument
 
 ### Parameter Guide
 

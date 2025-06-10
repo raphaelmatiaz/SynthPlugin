@@ -16,7 +16,7 @@ juce_add_plugin(SynthPlugin
     COPY_PLUGIN_AFTER_BUILD TRUE
     PLUGIN_MANUFACTURER_CODE Manu
     PLUGIN_CODE SyPl
-    FORMATS VST3
+    FORMATS VST3 Standalone
     PRODUCT_NAME "SynthPlugin")
 
 # Set source files
