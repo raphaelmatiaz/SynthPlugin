@@ -134,6 +134,15 @@ SynthPluginAudioProcessorEditor::SynthPluginAudioProcessorEditor (SynthPluginAud
     masterVolumeLabel.attachToComponent (&masterVolumeSlider, false);
     addAndMakeVisible (masterVolumeLabel);
     
+    // Setup test tone button
+    testToneButton.setButtonText ("Test Tone");
+    testToneButton.setColour (juce::ToggleButton::tickDisabledColourId, juce::Colours::red);
+    testToneButton.setColour (juce::ToggleButton::tickColourId, juce::Colours::green);
+    addAndMakeVisible (testToneButton);
+    testToneLabel.setText ("Test Tone", juce::dontSendNotification);
+    testToneLabel.attachToComponent (&testToneButton, false);
+    addAndMakeVisible (testToneLabel);
+    
     // Create parameter attachments
     waveformAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::WAVEFORM_ID, waveformCombo);
     attackAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::ATTACK_ID, attackSlider);
@@ -154,6 +163,8 @@ SynthPluginAudioProcessorEditor::SynthPluginAudioProcessorEditor (SynthPluginAud
     reverbMixAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::REVERB_MIX_ID, reverbMixSlider);
     
     masterVolumeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::MASTER_VOLUME_ID, masterVolumeSlider);
+    
+    testToneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::TEST_TONE_ID, testToneButton);
 }
 
 SynthPluginAudioProcessorEditor::~SynthPluginAudioProcessorEditor()
@@ -178,9 +189,11 @@ void SynthPluginAudioProcessorEditor::resized()
     auto delayBounds = effectsBounds.removeFromLeft (effectsBounds.getWidth() / 2);
     auto reverbBounds = effectsBounds;
     
-    // Master volume on the right
+    // Master volume and test tone on the right
     auto masterBounds = bounds.removeFromRight (80).reduced (margin);
+    auto testToneBounds = masterBounds.removeFromBottom (40);
     masterVolumeSlider.setBounds (masterBounds);
+    testToneButton.setBounds (testToneBounds);
     
     // Synth section
     synthGroup.setBounds (synthBounds);
