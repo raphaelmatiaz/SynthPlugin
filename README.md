@@ -122,16 +122,49 @@ The standalone version will be built to:
 
 ### Quick Testing (Standalone)
 ```bash
-# Launch standalone version
+# Launch standalone version (Linux/WSL)
 cd SynthPlugin/build/SynthPlugin_artefacts/Standalone
 ./SynthPlugin
 ```
 
-### Plugin Testing (Reaper/DAWs)
-1. **Scan Plugins**: In Reaper, go to Options > Preferences > Plug-ins > VST
-2. **Add Path**: Ensure `~/.vst3/` is in the VST3 scan path
-3. **Rescan**: Force a plugin rescan
-4. **Load Plugin**: Create a new track and load "SynthPlugin" as an instrument
+### Plugin Testing (Linux)
+1. **Scan Plugins**: In your Linux DAW, add `~/.vst3/` to VST3 scan path
+2. **Rescan**: Force a plugin rescan
+3. **Load Plugin**: Create a new track and load "SynthPlugin" as an instrument
+
+### WSL to Windows Plugin Setup
+
+If you're developing in WSL but need the plugin for Windows Reaper:
+
+#### Step 1: Install MinGW Cross-Compiler
+```bash
+sudo apt update && sudo apt install -y mingw-w64
+```
+
+#### Step 2: Build Windows Version
+```bash
+cd SynthPlugin
+./build-windows.sh
+```
+
+#### Step 3: Install to Windows
+```bash
+./install-windows.sh
+```
+
+#### Step 4: Use in Windows Reaper
+1. **Open Reaper** on Windows (not WSL)
+2. **Scan Plugins**: Options > Preferences > Plug-ins > VST
+3. **Verify Path**: Ensure `C:\Program Files\Common Files\VST3` is scanned
+4. **Rescan**: Force a plugin rescan
+5. **Load Plugin**: Create a new track and load "SynthPlugin" as an instrument
+
+### Alternative: Manual Windows Installation
+If the scripts don't work, manually copy the Windows VST3:
+```bash
+# After building with ./build-windows.sh
+cp -r build-windows/SynthPlugin_artefacts/VST3/SynthPlugin.vst3 "/mnt/c/Program Files/Common Files/VST3/"
+```
 
 ### Parameter Guide
 
