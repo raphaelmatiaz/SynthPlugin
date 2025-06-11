@@ -81,6 +81,10 @@ double SynthVoice::getNextSample()
             sample = (2.0 * phase) - 1.0;
             break;
             
+        case 2: // Square wave
+            sample = phase < 0.5 ? 1.0 : -1.0;
+            break;
+            
         default:
             sample = std::sin (phase * 2.0 * juce::MathConstants<double>::pi);
             break;

@@ -36,7 +36,7 @@ private:
     double currentSampleRate = 44100.0;
     double frequency = 440.0;
     double phase = 0.0;
-    int waveform = 0; // 0 = sine, 1 = sawtooth
+    int waveform = 0; // 0 = sine, 1 = sawtooth, 2 = square
     
     double getNextSample();
 };

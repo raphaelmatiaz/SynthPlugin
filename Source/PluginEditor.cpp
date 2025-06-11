@@ -29,9 +29,15 @@ SynthPluginAudioProcessorEditor::SynthPluginAudioProcessorEditor (SynthPluginAud
     signalGroup.setTextLabelPosition (juce::Justification::centredTop);
     addAndMakeVisible (signalGroup);
     
+    // Setup master group
+    masterGroup.setText ("Master");
+    masterGroup.setTextLabelPosition (juce::Justification::centredTop);
+    addAndMakeVisible (masterGroup);
+    
     // Setup synth controls
     waveformCombo.addItem ("Sine", 1);
     waveformCombo.addItem ("Sawtooth", 2);
+    waveformCombo.addItem ("Square", 3);
     addAndMakeVisible (waveformCombo);
     waveformLabel.setText ("Waveform", juce::dontSendNotification);
     waveformLabel.attachToComponent (&waveformCombo, false);
@@ -172,13 +178,7 @@ SynthPluginAudioProcessorEditor::SynthPluginAudioProcessorEditor (SynthPluginAud
     signalAmpLabel.attachToComponent (&signalAmpSlider, false);
     addAndMakeVisible (signalAmpLabel);
     
-    signalWaveCombo.addItem ("Sine", 1);
-    signalWaveCombo.addItem ("Sawtooth", 2);
-    signalWaveCombo.addItem ("Square", 3);
-    addAndMakeVisible (signalWaveCombo);
-    signalWaveLabel.setText ("Waveform", juce::dontSendNotification);
-    signalWaveLabel.attachToComponent (&signalWaveCombo, false);
-    addAndMakeVisible (signalWaveLabel);
+    // Note: Signal generator now uses synthesizer waveform instead of separate control
     
     // Create parameter attachments
     waveformAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::WAVEFORM_ID, waveformCombo);
@@ -203,11 +203,10 @@ SynthPluginAudioProcessorEditor::SynthPluginAudioProcessorEditor (SynthPluginAud
     
     testToneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::TEST_TONE_ID, testToneButton);
     
-    // Signal generator attachments
+    // Signal generator attachments (removed waveform - uses synth waveform)
     signalOnAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::SIGNAL_ON_ID, signalOnButton);
     signalFreqAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::SIGNAL_FREQ_ID, signalFreqSlider);
     signalAmpAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::SIGNAL_AMP_ID, signalAmpSlider);
-    signalWaveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::SIGNAL_WAVE_ID, signalWaveCombo);
 }
 
 SynthPluginAudioProcessorEditor::~SynthPluginAudioProcessorEditor()
@@ -250,8 +249,7 @@ void SynthPluginAudioProcessorEditor::resized()
     signalRow1.removeFromLeft(10);
     signalAmpSlider.setBounds(signalRow1.removeFromLeft(80));
     
-    signalControls.removeFromTop(10);
-    signalWaveCombo.setBounds(signalControls.removeFromTop(25));
+    // Note: Waveform is now controlled by the synthesizer waveform setting
     
     // Synth section
     synthGroup.setBounds(synthBounds);
@@ -269,12 +267,11 @@ void SynthPluginAudioProcessorEditor::resized()
     // Arpeggiator section
     arpGroup.setBounds(arpBounds);
     auto arpControls = arpBounds.reduced(margin);
-    arpEnabledButton.setBounds(arpControls.removeFromTop(30));
+    arpEnabledButton.setBounds(arpControls.removeFromTop(35));
     arpControls.removeFromTop(10);
     
-    auto arpRow = arpControls.removeFromTop(80);
-    arpRateSlider.setBounds(arpRow.removeFromLeft(80));
-    arpRow.removeFromLeft(10);
+    auto arpRow = arpControls.removeFromTop(70);
+    arpRateSlider.setBounds(arpRow.removeFromLeft(arpRow.getWidth() / 2).reduced(5));
     
     arpControls.removeFromTop(10);
     arpPatternCombo.setBounds(arpControls.removeFromTop(25));
@@ -282,24 +279,28 @@ void SynthPluginAudioProcessorEditor::resized()
     // Delay section
     delayGroup.setBounds(delayBounds);
     auto delayControls = delayBounds.reduced(margin);
-    auto delayRow = delayControls.removeFromTop(80);
+    delayControls.removeFromTop(10); // Space for labels
+    auto delayRow = delayControls.removeFromTop(90);
     auto delayControlWidth = delayRow.getWidth() / 3;
-    delayTimeSlider.setBounds(delayRow.removeFromLeft(delayControlWidth).reduced(5));
-    delayFeedbackSlider.setBounds(delayRow.removeFromLeft(delayControlWidth).reduced(5));
-    delayMixSlider.setBounds(delayRow.reduced(5));
+    delayTimeSlider.setBounds(delayRow.removeFromLeft(delayControlWidth).reduced(8));
+    delayFeedbackSlider.setBounds(delayRow.removeFromLeft(delayControlWidth).reduced(8));
+    delayMixSlider.setBounds(delayRow.reduced(8));
     
     // Reverb section
     reverbGroup.setBounds(reverbBounds);
     auto reverbControls = reverbBounds.reduced(margin);
-    auto reverbRow = reverbControls.removeFromTop(80);
+    reverbControls.removeFromTop(10); // Space for labels
+    auto reverbRow = reverbControls.removeFromTop(90);
     auto reverbControlWidth = reverbRow.getWidth() / 3;
-    reverbRoomSlider.setBounds(reverbRow.removeFromLeft(reverbControlWidth).reduced(5));
-    reverbDampingSlider.setBounds(reverbRow.removeFromLeft(reverbControlWidth).reduced(5));
-    reverbMixSlider.setBounds(reverbRow.reduced(5));
+    reverbRoomSlider.setBounds(reverbRow.removeFromLeft(reverbControlWidth).reduced(8));
+    reverbDampingSlider.setBounds(reverbRow.removeFromLeft(reverbControlWidth).reduced(8));
+    reverbMixSlider.setBounds(reverbRow.reduced(8));
     
     // Master controls section
+    masterGroup.setBounds(masterBounds);
     auto masterControls = masterBounds.reduced(margin);
-    masterVolumeSlider.setBounds(masterControls.removeFromTop(80));
+    masterControls.removeFromTop(10); // Space for label
+    masterVolumeSlider.setBounds(masterControls.removeFromTop(100));
     masterControls.removeFromTop(10);
-    testToneButton.setBounds(masterControls.removeFromTop(30));
+    testToneButton.setBounds(masterControls.removeFromTop(35));
 }

@@ -71,11 +71,10 @@ public:
     static const juce::String MASTER_VOLUME_ID;
     static const juce::String TEST_TONE_ID;
     
-    // Signal generator parameter IDs
+    // Signal generator parameter IDs (removed SIGNAL_WAVE_ID - uses synth waveform)
     static const juce::String SIGNAL_ON_ID;
     static const juce::String SIGNAL_FREQ_ID;
     static const juce::String SIGNAL_AMP_ID;
-    static const juce::String SIGNAL_WAVE_ID;
 
 private:
     //==============================================================================
@@ -84,15 +83,12 @@ private:
     DelayEffect delay;
     ReverbEffect reverb;
     
-    // Signal generator members
+    // Signal generator members (simplified - now generates MIDI instead of audio)
     bool isSignalGeneratorOn = false;
-    double signalPhase = 0.0;
     double signalFrequency = 440.0;
     double signalAmplitude = 0.5;
-    int signalWaveform = 0; // 0 = sine, 1 = sawtooth, 2 = square
     
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
-    void generateSignal(juce::AudioBuffer<float>& buffer);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (SynthPluginAudioProcessor)
 };

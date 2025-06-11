@@ -19,13 +19,12 @@ private:
     SynthPluginAudioProcessor& audioProcessor;
     
     // UI Components
-    juce::GroupComponent synthGroup, arpGroup, delayGroup, reverbGroup, signalGroup;
+    juce::GroupComponent synthGroup, arpGroup, delayGroup, reverbGroup, signalGroup, masterGroup;
     
-    // Signal generator controls
+    // Signal generator controls (removed waveform - uses synth waveform)
     juce::ToggleButton signalOnButton;
     juce::Slider signalFreqSlider, signalAmpSlider;
-    juce::ComboBox signalWaveCombo;
-    juce::Label signalOnLabel, signalFreqLabel, signalAmpLabel, signalWaveLabel;
+    juce::Label signalOnLabel, signalFreqLabel, signalAmpLabel;
     
     // Synth controls
     juce::ComboBox waveformCombo;
@@ -54,11 +53,10 @@ private:
     juce::ToggleButton testToneButton;
     juce::Label testToneLabel;
     
-    // Attachments
+    // Attachments (removed signal waveform - uses synth waveform)
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> signalOnAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> signalFreqAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> signalAmpAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> signalWaveAttachment;
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> waveformAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> attackAttachment;
