@@ -69,6 +69,7 @@ public:
     static const juce::String REVERB_DAMPING_ID;
     static const juce::String REVERB_MIX_ID;
     static const juce::String MASTER_VOLUME_ID;
+    static const juce::String TEST_TONE_ID;
 
 private:
     //==============================================================================

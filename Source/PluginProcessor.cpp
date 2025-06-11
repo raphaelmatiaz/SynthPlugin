@@ -18,6 +18,7 @@ const juce::String SynthPluginAudioProcessor::REVERB_ROOM_ID = "reverbRoom";
 const juce::String SynthPluginAudioProcessor::REVERB_DAMPING_ID = "reverbDamping";
 const juce::String SynthPluginAudioProcessor::REVERB_MIX_ID = "reverbMix";
 const juce::String SynthPluginAudioProcessor::MASTER_VOLUME_ID = "masterVolume";
+const juce::String SynthPluginAudioProcessor::TEST_TONE_ID = "testTone";
 
 //==============================================================================
 SynthPluginAudioProcessor::SynthPluginAudioProcessor()
@@ -157,6 +158,15 @@ void SynthPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     arpeggiator.setRate (arpRate);
     arpeggiator.setPattern (arpPattern);
     
+    // Handle test tone
+    auto testToneEnabled = parameters.getRawParameterValue (TEST_TONE_ID)->load() > 0.5f;
+    if (testToneEnabled)
+    {
+        // Generate a test note-on message for A4 (440Hz)
+        auto noteOnMessage = juce::MidiMessage::noteOn (1, 69, 0.8f); // Channel 1, Note 69 (A4), Velocity 0.8
+        midiMessages.addEvent (noteOnMessage, 0);
+    }
+    
     // Process MIDI through arpeggiator
     if (arpEnabled)
     {
@@ -253,6 +263,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout SynthPluginAudioProcessor::c
     
     // Master parameters
     params.push_back (std::make_unique<juce::AudioParameterFloat> (MASTER_VOLUME_ID, "Master Volume", 0.0f, 1.0f, 0.8f));
+    
+    // Test tone parameter
+    params.push_back (std::make_unique<juce::AudioParameterBool> (TEST_TONE_ID, "Test Tone", false));
     
     return { params.begin(), params.end() };
 }
