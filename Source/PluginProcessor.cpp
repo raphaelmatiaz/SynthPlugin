@@ -20,6 +20,12 @@ const juce::String SynthPluginAudioProcessor::REVERB_MIX_ID = "reverbMix";
 const juce::String SynthPluginAudioProcessor::MASTER_VOLUME_ID = "masterVolume";
 const juce::String SynthPluginAudioProcessor::TEST_TONE_ID = "testTone";
 
+// Signal generator parameter IDs
+const juce::String SynthPluginAudioProcessor::SIGNAL_ON_ID = "signalOn";
+const juce::String SynthPluginAudioProcessor::SIGNAL_FREQ_ID = "signalFreq";
+const juce::String SynthPluginAudioProcessor::SIGNAL_AMP_ID = "signalAmp";
+const juce::String SynthPluginAudioProcessor::SIGNAL_WAVE_ID = "signalWave";
+
 //==============================================================================
 SynthPluginAudioProcessor::SynthPluginAudioProcessor()
     : AudioProcessor (BusesProperties()
@@ -134,6 +140,18 @@ void SynthPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    // Update signal generator parameters
+    isSignalGeneratorOn = parameters.getRawParameterValue(SIGNAL_ON_ID)->load() > 0.5f;
+    signalFrequency = parameters.getRawParameterValue(SIGNAL_FREQ_ID)->load();
+    signalAmplitude = parameters.getRawParameterValue(SIGNAL_AMP_ID)->load();
+    signalWaveform = static_cast<int>(parameters.getRawParameterValue(SIGNAL_WAVE_ID)->load());
+    
+    // Generate signal if enabled
+    if (isSignalGeneratorOn)
+    {
+        generateSignal(buffer);
+    }
+
     // Update voice parameters
     auto attack = parameters.getRawParameterValue (ATTACK_ID)->load();
     auto decay = parameters.getRawParameterValue (DECAY_ID)->load();
@@ -158,7 +176,7 @@ void SynthPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     arpeggiator.setRate (arpRate);
     arpeggiator.setPattern (arpPattern);
     
-    // Handle test tone
+    // Handle test tone (legacy support)
     auto testToneEnabled = parameters.getRawParameterValue (TEST_TONE_ID)->load() > 0.5f;
     if (testToneEnabled)
     {
@@ -188,7 +206,7 @@ void SynthPluginAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, 
     // Render synthesiser
     synthesiser.renderNextBlock (buffer, midiMessages, 0, buffer.getNumSamples());
     
-    // Apply effects
+    // Apply effects to the combined signal (signal generator + synthesiser)
     delay.setDelayTime (parameters.getRawParameterValue (DELAY_TIME_ID)->load());
     delay.setFeedback (parameters.getRawParameterValue (DELAY_FEEDBACK_ID)->load());
     delay.setMix (parameters.getRawParameterValue (DELAY_MIX_ID)->load());
@@ -262,12 +280,62 @@ juce::AudioProcessorValueTreeState::ParameterLayout SynthPluginAudioProcessor::c
     params.push_back (std::make_unique<juce::AudioParameterFloat> (REVERB_MIX_ID, "Reverb Mix", 0.0f, 1.0f, 0.3f));
     
     // Master parameters
-    params.push_back (std::make_unique<juce::AudioParameterFloat> (MASTER_VOLUME_ID, "Master Volume", 0.0f, 1.0f, 0.8f));
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (MASTER_VOLUME_ID, "Master Volume", 0.0f, 1.0f, 1.0f));
     
-    // Test tone parameter
+    // Test tone parameter (legacy)
     params.push_back (std::make_unique<juce::AudioParameterBool> (TEST_TONE_ID, "Test Tone", false));
     
+    // Signal generator parameters
+    params.push_back (std::make_unique<juce::AudioParameterBool> (SIGNAL_ON_ID, "Signal On", false));
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (SIGNAL_FREQ_ID, "Signal Frequency", 100.0f, 2000.0f, 440.0f));
+    params.push_back (std::make_unique<juce::AudioParameterFloat> (SIGNAL_AMP_ID, "Signal Amplitude", 0.0f, 1.0f, 0.8f));
+    params.push_back (std::make_unique<juce::AudioParameterChoice> (SIGNAL_WAVE_ID, "Signal Waveform", 
+                      juce::StringArray { "Sine", "Sawtooth", "Square" }, 0));
+    
     return { params.begin(), params.end() };
+}
+
+//==============================================================================
+void SynthPluginAudioProcessor::generateSignal(juce::AudioBuffer<float>& buffer)
+{
+    const int numSamples = buffer.getNumSamples();
+    const int numChannels = buffer.getNumChannels();
+    const double sampleRate = getSampleRate();
+    
+    if (sampleRate <= 0.0)
+        return;
+        
+    const double phaseIncrement = (2.0 * juce::MathConstants<double>::pi * signalFrequency) / sampleRate;
+    
+    for (int sample = 0; sample < numSamples; ++sample)
+    {
+        float sampleValue = 0.0f;
+        
+        // Generate waveform based on selection
+        switch (signalWaveform)
+        {
+            case 0: // Sine
+                sampleValue = std::sin(signalPhase) * signalAmplitude;
+                break;
+            case 1: // Sawtooth
+                sampleValue = (2.0f * (signalPhase / (2.0 * juce::MathConstants<double>::pi)) - 1.0f) * signalAmplitude;
+                break;
+            case 2: // Square
+                sampleValue = (signalPhase < juce::MathConstants<double>::pi ? 1.0f : -1.0f) * signalAmplitude;
+                break;
+        }
+        
+        // Add to existing audio (don't replace it)
+        for (int channel = 0; channel < numChannels; ++channel)
+        {
+            buffer.addSample(channel, sample, sampleValue);
+        }
+        
+        // Update phase
+        signalPhase += phaseIncrement;
+        if (signalPhase >= 2.0 * juce::MathConstants<double>::pi)
+            signalPhase -= 2.0 * juce::MathConstants<double>::pi;
+    }
 }
 
 //==============================================================================

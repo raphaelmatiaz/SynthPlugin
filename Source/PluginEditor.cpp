@@ -5,7 +5,7 @@
 SynthPluginAudioProcessorEditor::SynthPluginAudioProcessorEditor (SynthPluginAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
-    setSize (600, 400);
+    setSize (800, 600);
     
     // Setup group components
     synthGroup.setText ("Synthesiser");
@@ -23,6 +23,11 @@ SynthPluginAudioProcessorEditor::SynthPluginAudioProcessorEditor (SynthPluginAud
     reverbGroup.setText ("Reverb");
     reverbGroup.setTextLabelPosition (juce::Justification::centredTop);
     addAndMakeVisible (reverbGroup);
+    
+    // Setup signal generator group
+    signalGroup.setText ("Signal Generator");
+    signalGroup.setTextLabelPosition (juce::Justification::centredTop);
+    addAndMakeVisible (signalGroup);
     
     // Setup synth controls
     waveformCombo.addItem ("Sine", 1);
@@ -143,6 +148,38 @@ SynthPluginAudioProcessorEditor::SynthPluginAudioProcessorEditor (SynthPluginAud
     testToneLabel.attachToComponent (&testToneButton, false);
     addAndMakeVisible (testToneLabel);
     
+    // Setup signal generator controls
+    signalOnButton.setButtonText ("PLAY SIGNAL");
+    signalOnButton.setColour (juce::ToggleButton::tickDisabledColourId, juce::Colours::red);
+    signalOnButton.setColour (juce::ToggleButton::tickColourId, juce::Colours::green);
+    signalOnButton.setColour (juce::ToggleButton::textColourId, juce::Colours::white);
+    addAndMakeVisible (signalOnButton);
+    signalOnLabel.setText ("Signal Generator", juce::dontSendNotification);
+    signalOnLabel.attachToComponent (&signalOnButton, false);
+    addAndMakeVisible (signalOnLabel);
+    
+    signalFreqSlider.setSliderStyle (juce::Slider::Rotary);
+    signalFreqSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible (signalFreqSlider);
+    signalFreqLabel.setText ("Frequency", juce::dontSendNotification);
+    signalFreqLabel.attachToComponent (&signalFreqSlider, false);
+    addAndMakeVisible (signalFreqLabel);
+    
+    signalAmpSlider.setSliderStyle (juce::Slider::Rotary);
+    signalAmpSlider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 60, 20);
+    addAndMakeVisible (signalAmpSlider);
+    signalAmpLabel.setText ("Amplitude", juce::dontSendNotification);
+    signalAmpLabel.attachToComponent (&signalAmpSlider, false);
+    addAndMakeVisible (signalAmpLabel);
+    
+    signalWaveCombo.addItem ("Sine", 1);
+    signalWaveCombo.addItem ("Sawtooth", 2);
+    signalWaveCombo.addItem ("Square", 3);
+    addAndMakeVisible (signalWaveCombo);
+    signalWaveLabel.setText ("Waveform", juce::dontSendNotification);
+    signalWaveLabel.attachToComponent (&signalWaveCombo, false);
+    addAndMakeVisible (signalWaveLabel);
+    
     // Create parameter attachments
     waveformAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::WAVEFORM_ID, waveformCombo);
     attackAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::ATTACK_ID, attackSlider);
@@ -165,6 +202,12 @@ SynthPluginAudioProcessorEditor::SynthPluginAudioProcessorEditor (SynthPluginAud
     masterVolumeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::MASTER_VOLUME_ID, masterVolumeSlider);
     
     testToneAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::TEST_TONE_ID, testToneButton);
+    
+    // Signal generator attachments
+    signalOnAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::SIGNAL_ON_ID, signalOnButton);
+    signalFreqAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::SIGNAL_FREQ_ID, signalFreqSlider);
+    signalAmpAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::SIGNAL_AMP_ID, signalAmpSlider);
+    signalWaveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (audioProcessor.parameters, SynthPluginAudioProcessor::SIGNAL_WAVE_ID, signalWaveCombo);
 }
 
 SynthPluginAudioProcessorEditor::~SynthPluginAudioProcessorEditor()
@@ -179,57 +222,84 @@ void SynthPluginAudioProcessorEditor::paint (juce::Graphics& g)
 
 void SynthPluginAudioProcessorEditor::resized()
 {
-    auto bounds = getLocalBounds();
+    auto bounds = getLocalBounds().reduced(10);
     auto margin = 10;
     
-    // Layout sections
-    auto synthBounds = bounds.removeFromTop (140).reduced (margin);
-    auto arpBounds = bounds.removeFromTop (140).reduced (margin);
-    auto effectsBounds = bounds.reduced (margin);
-    auto delayBounds = effectsBounds.removeFromLeft (effectsBounds.getWidth() / 2);
-    auto reverbBounds = effectsBounds;
+    // Create a 3x2 grid layout
+    const int sectionWidth = bounds.getWidth() / 3;
+    const int sectionHeight = bounds.getHeight() / 2;
     
-    // Master volume and test tone on the right
-    auto masterBounds = bounds.removeFromRight (80).reduced (margin);
-    auto testToneBounds = masterBounds.removeFromBottom (40);
-    masterVolumeSlider.setBounds (masterBounds);
-    testToneButton.setBounds (testToneBounds);
+    // Define all section bounds
+    auto signalBounds = juce::Rectangle<int>(bounds.getX(), bounds.getY(), sectionWidth - 5, sectionHeight - 5);
+    auto synthBounds = juce::Rectangle<int>(bounds.getX() + sectionWidth, bounds.getY(), sectionWidth - 5, sectionHeight - 5);
+    auto arpBounds = juce::Rectangle<int>(bounds.getX() + sectionWidth * 2, bounds.getY(), sectionWidth - 5, sectionHeight - 5);
+    
+    auto delayBounds = juce::Rectangle<int>(bounds.getX(), bounds.getY() + sectionHeight, sectionWidth - 5, sectionHeight - 5);
+    auto reverbBounds = juce::Rectangle<int>(bounds.getX() + sectionWidth, bounds.getY() + sectionHeight, sectionWidth - 5, sectionHeight - 5);
+    auto masterBounds = juce::Rectangle<int>(bounds.getX() + sectionWidth * 2, bounds.getY() + sectionHeight, sectionWidth - 5, sectionHeight - 5);
+    
+    // Signal Generator section
+    signalGroup.setBounds(signalBounds);
+    auto signalControls = signalBounds.reduced(margin);
+    
+    signalOnButton.setBounds(signalControls.removeFromTop(40)); // Make button taller
+    signalControls.removeFromTop(10);
+    
+    auto signalRow1 = signalControls.removeFromTop(80);
+    signalFreqSlider.setBounds(signalRow1.removeFromLeft(80));
+    signalRow1.removeFromLeft(10);
+    signalAmpSlider.setBounds(signalRow1.removeFromLeft(80));
+    
+    signalControls.removeFromTop(10);
+    signalWaveCombo.setBounds(signalControls.removeFromTop(25));
     
     // Synth section
-    synthGroup.setBounds (synthBounds);
-    auto synthControls = synthBounds.reduced (margin);
-    auto controlWidth = synthControls.getWidth() / 5;
+    synthGroup.setBounds(synthBounds);
+    auto synthControls = synthBounds.reduced(margin);
+    waveformCombo.setBounds(synthControls.removeFromTop(25));
+    synthControls.removeFromTop(10);
     
-    waveformCombo.setBounds (synthControls.removeFromLeft (controlWidth).reduced (5));
-    attackSlider.setBounds (synthControls.removeFromLeft (controlWidth).reduced (5));
-    decaySlider.setBounds (synthControls.removeFromLeft (controlWidth).reduced (5));
-    sustainSlider.setBounds (synthControls.removeFromLeft (controlWidth).reduced (5));
-    releaseSlider.setBounds (synthControls.reduced (5));
+    auto synthRow = synthControls.removeFromTop(80);
+    auto synthControlWidth = synthRow.getWidth() / 4;
+    attackSlider.setBounds(synthRow.removeFromLeft(synthControlWidth).reduced(5));
+    decaySlider.setBounds(synthRow.removeFromLeft(synthControlWidth).reduced(5));
+    sustainSlider.setBounds(synthRow.removeFromLeft(synthControlWidth).reduced(5));
+    releaseSlider.setBounds(synthRow.reduced(5));
     
     // Arpeggiator section
-    arpGroup.setBounds (arpBounds);
-    auto arpControls = arpBounds.reduced (margin);
-    auto arpControlWidth = arpControls.getWidth() / 3;
+    arpGroup.setBounds(arpBounds);
+    auto arpControls = arpBounds.reduced(margin);
+    arpEnabledButton.setBounds(arpControls.removeFromTop(30));
+    arpControls.removeFromTop(10);
     
-    arpEnabledButton.setBounds (arpControls.removeFromLeft (arpControlWidth).reduced (5));
-    arpRateSlider.setBounds (arpControls.removeFromLeft (arpControlWidth).reduced (5));
-    arpPatternCombo.setBounds (arpControls.reduced (5));
+    auto arpRow = arpControls.removeFromTop(80);
+    arpRateSlider.setBounds(arpRow.removeFromLeft(80));
+    arpRow.removeFromLeft(10);
+    
+    arpControls.removeFromTop(10);
+    arpPatternCombo.setBounds(arpControls.removeFromTop(25));
     
     // Delay section
-    delayGroup.setBounds (delayBounds);
-    auto delayControls = delayBounds.reduced (margin);
-    auto delayControlWidth = delayControls.getWidth() / 3;
-    
-    delayTimeSlider.setBounds (delayControls.removeFromLeft (delayControlWidth).reduced (5));
-    delayFeedbackSlider.setBounds (delayControls.removeFromLeft (delayControlWidth).reduced (5));
-    delayMixSlider.setBounds (delayControls.reduced (5));
+    delayGroup.setBounds(delayBounds);
+    auto delayControls = delayBounds.reduced(margin);
+    auto delayRow = delayControls.removeFromTop(80);
+    auto delayControlWidth = delayRow.getWidth() / 3;
+    delayTimeSlider.setBounds(delayRow.removeFromLeft(delayControlWidth).reduced(5));
+    delayFeedbackSlider.setBounds(delayRow.removeFromLeft(delayControlWidth).reduced(5));
+    delayMixSlider.setBounds(delayRow.reduced(5));
     
     // Reverb section
-    reverbGroup.setBounds (reverbBounds);
-    auto reverbControls = reverbBounds.reduced (margin);
-    auto reverbControlWidth = reverbControls.getWidth() / 3;
+    reverbGroup.setBounds(reverbBounds);
+    auto reverbControls = reverbBounds.reduced(margin);
+    auto reverbRow = reverbControls.removeFromTop(80);
+    auto reverbControlWidth = reverbRow.getWidth() / 3;
+    reverbRoomSlider.setBounds(reverbRow.removeFromLeft(reverbControlWidth).reduced(5));
+    reverbDampingSlider.setBounds(reverbRow.removeFromLeft(reverbControlWidth).reduced(5));
+    reverbMixSlider.setBounds(reverbRow.reduced(5));
     
-    reverbRoomSlider.setBounds (reverbControls.removeFromLeft (reverbControlWidth).reduced (5));
-    reverbDampingSlider.setBounds (reverbControls.removeFromLeft (reverbControlWidth).reduced (5));
-    reverbMixSlider.setBounds (reverbControls.reduced (5));
+    // Master controls section
+    auto masterControls = masterBounds.reduced(margin);
+    masterVolumeSlider.setBounds(masterControls.removeFromTop(80));
+    masterControls.removeFromTop(10);
+    testToneButton.setBounds(masterControls.removeFromTop(30));
 }
